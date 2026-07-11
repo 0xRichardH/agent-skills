@@ -23,7 +23,7 @@ Endpoint availability and accepted models are provider-defined. Configure the mo
 - `partial_images`
 - `response_format`: `b64_json` or `url`
 - `stream`
-- `aspect_ratio` and `resolution` for Grok-oriented providers
+- `aspect_ratio` and `resolution` when supported by the provider
 
 ## Edit fields
 

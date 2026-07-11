@@ -40,7 +40,7 @@ python scripts/images.py edit \
 
 Use repeated `--image` flags for composition and `--mask ./mask.png` for masked edits. Pass provider-specific fields with `--extra key=value`; use JSON values for numbers, booleans, arrays, or objects.
 
-Read [`references/api.md`](references/api.md) when selecting provider-specific fields, using Grok sizing, diagnosing an upstream compatibility issue, or implementing streaming. Run `python scripts/images.py --help` for the complete local interface.
+Read [`references/api.md`](references/api.md) when selecting provider-specific fields, diagnosing an upstream compatibility issue, or implementing streaming. Run `python scripts/images.py --help` for the complete local interface.
 
 ## Defaults and Boundaries
 
