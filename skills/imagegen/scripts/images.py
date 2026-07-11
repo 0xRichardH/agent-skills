@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
 def request_headers(api_key: str | None) -> dict[str, str]:
     if not api_key:
         raise ValueError("missing API key: set OPENAI_API_KEY or pass --api-key")
-    return {"Authorization": f"Bearer {api_key}", "User-Agent": "openai-compatible-images-skill/1.0"}
+    return {"Authorization": f"Bearer {api_key}", "User-Agent": "imagegen-skill/1.0"}
 
 
 def optional_fields(args: argparse.Namespace) -> dict[str, Any]:

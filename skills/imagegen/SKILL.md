@@ -1,9 +1,9 @@
 ---
-name: openai-compatible-images
-description: Generate or edit images through OpenAI-compatible image APIs. Load when the user wants an image created, transformed, masked, or composed and the work should use a configured OpenAI-compatible endpoint rather than a built-in image tool.
+name: imagegen
+description: Generate and edit images through a configured OpenAI-compatible Images API. Load when the user wants to create, transform, mask, or compose images.
 ---
 
-# OpenAI-Compatible Images
+# Imagegen
 
 Turn an image request into saved image files through an OpenAI-compatible API. Use the bundled client so request construction, base64 decoding, data-URL handling, and file naming stay deterministic.
 
