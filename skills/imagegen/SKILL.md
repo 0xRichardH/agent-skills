@@ -15,8 +15,9 @@ Turn an image request into saved image files through an OpenAI-compatible API. U
    - **Generate** when the user supplies no source image.
    - **Edit** when the user supplies one or more source images; add `--mask` only when a mask is supplied.
 4. Translate the request into a concrete prompt that preserves the user's subject, composition, style, text, and constraints. Keep requested wording exact when text must appear in the image.
-5. Run `scripts/images.py generate` or `scripts/images.py edit`. Prefer non-streaming `b64_json`; it yields durable local artifacts across compatibility providers.
-6. Verify that every reported output path exists and is a non-empty image. Return the paths plus the model and material options used. Completion means every requested image has been saved or the upstream error has been reported with its response body.
+5. Choose output settings deliberately. Use low quality for drafts when supported, raise it for final assets, and use JPEG or WebP when latency or file size matters. Request compression only with JPEG or WebP. Transparent backgrounds and exact sizes are model-dependent.
+6. Run `scripts/images.py generate` or `scripts/images.py edit`. Prefer non-streaming `b64_json`; it yields durable local artifacts across compatibility providers.
+7. Verify that every reported output path exists and is a non-empty image. Return the paths plus the model and material options used. Completion means every requested image has been saved or the upstream error has been reported with its response body and request ID when available.
 
 ## Commands
 
@@ -38,14 +39,14 @@ python scripts/images.py edit \
   --output-dir ./edited
 ```
 
-Use repeated `--image` flags for composition and `--mask ./mask.png` for masked edits. Pass provider-specific fields with `--extra key=value`; use JSON values for numbers, booleans, arrays, or objects.
+Use repeated `--image` flags for composition and `--mask ./mask.png` for masked edits. A mask guides the edit rather than defining a pixel-exact boundary; with multiple inputs it applies to the first image. Pass provider-specific fields with `--extra key=value`; use JSON values for numbers, booleans, arrays, or objects.
 
 Read [`references/api.md`](references/api.md) when selecting provider-specific fields, diagnosing an upstream compatibility issue, or implementing streaming. Run `python scripts/images.py --help` for the complete local interface.
 
 ## Defaults and Boundaries
 
 - Model precedence: explicit `--model`, then `OPENAI_IMAGE_MODEL`; absence is a configuration error.
-- Default output directory: `./generated-images`.
+- Default output directory: `./generated-images`; existing files are preserved by advancing the numeric suffix.
 - Default format: `png`; the response's declared format takes precedence.
 - Edits use multipart uploads because that is the broadest compatible form and avoids loading source images into model context.
 - Treat a returned `url` as either an HTTP URL or a data URL; the client handles both.

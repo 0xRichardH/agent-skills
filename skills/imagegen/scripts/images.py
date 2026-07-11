@@ -51,18 +51,32 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--model", default=env_value("OPENAI_IMAGE_MODEL"))
     parser.add_argument("--base-url", default=env_value("OPENAI_BASE_URL", default=DEFAULT_BASE_URL))
     parser.add_argument("--api-key", default=env_value("OPENAI_API_KEY"))
-    parser.add_argument("--n", type=int, default=1)
+    parser.add_argument("--n", type=positive_int, default=1)
     parser.add_argument("--size")
     parser.add_argument("--quality")
     parser.add_argument("--background")
     parser.add_argument("--output-format", choices=sorted(FORMAT_EXTENSIONS))
-    parser.add_argument("--output-compression", type=int)
+    parser.add_argument("--output-compression", type=percentage)
     parser.add_argument("--moderation")
     parser.add_argument("--input-fidelity")
     parser.add_argument("--response-format", choices=("b64_json", "url"), default="b64_json")
     parser.add_argument("--extra", action="append", default=[], type=parse_extra, metavar="KEY=VALUE")
     parser.add_argument("--output-dir", type=Path, default=Path("generated-images"))
     parser.add_argument("--output-prefix", default="image")
+
+
+def positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("value must be at least 1")
+    return parsed
+
+
+def percentage(value: str) -> int:
+    parsed = int(value)
+    if not 0 <= parsed <= 100:
+        raise argparse.ArgumentTypeError("value must be between 0 and 100")
+    return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -136,13 +150,15 @@ def post_multipart(url: str, headers: dict[str, str], fields: dict[str, Any], fi
 
 def open_json(request: urllib.request.Request) -> tuple[dict[str, Any], str | None]:
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=180) as response:
             content_type = response.headers.get_content_type()
             payload = json.loads(response.read().decode("utf-8"))
             return payload, content_type
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"image API returned HTTP {error.code}: {detail}") from error
+        request_id = error.headers.get("x-request-id")
+        suffix = f" (request id: {request_id})" if request_id else ""
+        raise RuntimeError(f"image API returned HTTP {error.code}{suffix}: {detail}") from error
     except urllib.error.URLError as error:
         raise RuntimeError(f"could not reach image API: {error.reason}") from error
 
@@ -159,13 +175,21 @@ def decode_data_url(url: str) -> tuple[bytes, str | None]:
 def fetch_image_url(url: str) -> tuple[bytes, str | None]:
     if url.startswith("data:"):
         return decode_data_url(url)
-    with urllib.request.urlopen(url) as response:
+    with urllib.request.urlopen(url, timeout=180) as response:
         return response.read(), response.headers.get_content_type()
 
 
 def extension_for(response: dict[str, Any], mime: str | None) -> str:
     declared = str(response.get("output_format", "")).lower()
     return FORMAT_EXTENSIONS.get(declared) or CONTENT_EXTENSIONS.get(mime or "") or "png"
+
+
+def available_output_path(output_dir: Path, prefix: str, index: int, extension: str) -> Path:
+    candidate = output_dir / f"{prefix}-{index}.{extension}"
+    while candidate.exists():
+        index += 1
+        candidate = output_dir / f"{prefix}-{index}.{extension}"
+    return candidate
 
 
 def save_outputs(response: dict[str, Any], output_dir: Path, prefix: str) -> list[Path]:
@@ -186,7 +210,7 @@ def save_outputs(response: dict[str, Any], output_dir: Path, prefix: str) -> lis
             raise RuntimeError(f"image item contains neither b64_json nor url: {json.dumps(item)}")
         if not raw:
             raise RuntimeError(f"image item {index} decoded to an empty file")
-        path = output_dir / f"{prefix}-{index}.{extension_for(response, mime)}"
+        path = available_output_path(output_dir, prefix, index, extension_for(response, mime))
         path.write_bytes(raw)
         paths.append(path.resolve())
     return paths
@@ -195,6 +219,8 @@ def save_outputs(response: dict[str, Any], output_dir: Path, prefix: str) -> lis
 def run(args: argparse.Namespace) -> int:
     if not args.model:
         raise ValueError("missing image model: set OPENAI_IMAGE_MODEL or pass --model")
+    if args.output_compression is not None and args.output_format not in {"jpeg", "jpg", "webp"}:
+        raise ValueError("--output-compression requires --output-format jpeg, jpg, or webp")
     headers = request_headers(args.api_key)
     common: dict[str, Any] = {
         "model": args.model,
