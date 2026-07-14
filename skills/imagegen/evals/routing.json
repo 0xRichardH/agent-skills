@@ -1,0 +1,32 @@
+[
+  {
+    "query": "Use my local OpenAI-compatible endpoint to generate three 1024x1024 PNG concepts for a retro robot mascot and save them under assets/concepts.",
+    "should_trigger": true
+  },
+  {
+    "query": "Edit product.png through our OpenAI-compatible image endpoint: remove the background, preserve the label exactly, and save a transparent WebP.",
+    "should_trigger": true
+  },
+  {
+    "query": "Combine headshot.png and office.jpg into one editorial illustration using the configured gpt-image model.",
+    "should_trigger": true
+  },
+  {
+    "query": "Generate a hero image for this page.",
+    "should_trigger": false,
+    "reason": "When a built-in image-generation tool is available and no compatible endpoint is requested, use that direct tool."
+  },
+  {
+    "query": "Write a TypeScript client wrapper for the OpenAI images API, but do not call the API.",
+    "should_trigger": false
+  },
+  {
+    "query": "Review this image for accessibility and suggest better alt text.",
+    "should_trigger": false
+  },
+  {
+    "query": "Our compatible image endpoint rejects the output_format field during edits. Diagnose the provider-specific request mismatch.",
+    "should_trigger": true,
+    "progressive_read": "references/api.md"
+  }
+]
